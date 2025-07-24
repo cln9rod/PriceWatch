@@ -31,13 +31,8 @@ app.get('/api/health', (req, res) => {
 
 // MongoDB connection
 const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/datapipeline')
-    console.log('MongoDB connected successfully')
-  } catch (error) {
-    console.error('MongoDB connection error:', error)
-    process.exit(1)
-  }
+  await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/datapipeline')
+  console.log('MongoDB connected successfully')
 }
 
 // Socket.io connection handling
@@ -52,7 +47,12 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001
 
 const startServer = async () => {
-  await connectDB()
+  // Try to connect to MongoDB but don't fail if it's not available
+  try {
+    await connectDB()
+  } catch (error) {
+    console.warn('MongoDB not available, running without database:', (error as Error).message)
+  }
   
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
