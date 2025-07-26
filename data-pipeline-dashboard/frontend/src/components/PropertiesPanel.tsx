@@ -1,24 +1,31 @@
-import React from 'react'
-import { Node } from 'reactflow'
+import { useState } from 'react'
+import { PipelineNode } from '../types/pipeline'
 
 interface PropertiesPanelProps {
-  selectedNode: Node | null
+  selectedNode: PipelineNode | null
   onNodeUpdate: (nodeId: string, newData: any) => void
 }
 
 const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ selectedNode, onNodeUpdate }) => {
-  const handleConfigChange = (key: string, value: string) => {
+  const [jsonError, setJsonError] = useState<string | null>(null)
+
+  const handleConfigChange = (key: string, value: string | Record<string, string>) => {
     if (!selectedNode) return
     
-    const newConfig = {
-      ...selectedNode.data.config,
-      [key]: value
+    try {
+      const newConfig = {
+        ...selectedNode.data.config,
+        [key]: value
+      }
+      
+      onNodeUpdate(selectedNode.id, {
+        ...selectedNode.data,
+        config: newConfig
+      })
+      setJsonError(null)
+    } catch (error) {
+      console.error('Config update failed:', error)
     }
-    
-    onNodeUpdate(selectedNode.id, {
-      ...selectedNode.data,
-      config: newConfig
-    })
   }
 
   const renderSourceConfig = () => (
@@ -61,13 +68,19 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ selectedNode, onNodeU
           value={JSON.stringify(selectedNode?.data.config.headers || {}, null, 2)}
           onChange={(e) => {
             try {
-              const headers = JSON.parse(e.target.value)
+              const headers = JSON.parse(e.target.value || '{}')
               handleConfigChange('headers', headers)
+              setJsonError(null)
             } catch (error) {
-              // Invalid JSON, don't update
+              setJsonError('Invalid JSON format')
             }
           }}
         />
+        {jsonError && (
+          <div className="mt-1 text-xs text-red-600">
+            {jsonError}
+          </div>
+        )}
       </div>
     </div>
   )

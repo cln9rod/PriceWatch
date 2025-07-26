@@ -1,13 +1,18 @@
-import React from 'react'
+import { DragEvent } from 'react'
+import { NodeCategory, NodeColors } from '../types/pipeline'
 
 const NodePalette: React.FC = () => {
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
-    event.dataTransfer.setData('application/reactflow', nodeType)
-    event.dataTransfer.setData('application/reactflow-label', label)
-    event.dataTransfer.effectAllowed = 'move'
+  const handleDragStart = (event: DragEvent, nodeType: string, label: string) => {
+    try {
+      event.dataTransfer.setData('application/reactflow', nodeType)
+      event.dataTransfer.setData('application/reactflow-label', label)
+      event.dataTransfer.effectAllowed = 'move'
+    } catch (error) {
+      console.error('Drag start failed:', error)
+    }
   }
 
-  const nodes = [
+  const nodeCategories: NodeCategory[] = [
     {
       category: 'Sources',
       items: [
@@ -37,12 +42,36 @@ const NodePalette: React.FC = () => {
     }
   ]
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category: string): keyof typeof colorSchemes => {
     switch (category) {
       case 'Sources': return 'blue'
-      case 'Transforms': return 'green'
+      case 'Transforms': return 'green' 
       case 'Destinations': return 'purple'
-      default: return 'gray'
+      default: return 'blue'
+    }
+  }
+
+  const colorSchemes: Record<string, NodeColors> = {
+    blue: {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      hover: 'hover:bg-blue-100',
+      text: 'text-blue-800',
+      description: 'text-blue-600'
+    },
+    green: {
+      bg: 'bg-green-50',
+      border: 'border-green-200', 
+      hover: 'hover:bg-green-100',
+      text: 'text-green-800',
+      description: 'text-green-600'
+    },
+    purple: {
+      bg: 'bg-purple-50',
+      border: 'border-purple-200',
+      hover: 'hover:bg-purple-100', 
+      text: 'text-purple-800',
+      description: 'text-purple-600'
     }
   }
 
@@ -56,7 +85,7 @@ const NodePalette: React.FC = () => {
       </div>
       
       <div className="space-y-6">
-        {nodes.map((category) => (
+        {nodeCategories.map((category) => (
           <div key={category.category}>
             <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
               {category.category}
@@ -64,20 +93,22 @@ const NodePalette: React.FC = () => {
             <div className="space-y-2">
               {category.items.map((item) => {
                 const color = getCategoryColor(category.category)
+                const classes = colorSchemes[color]
+                
                 return (
                   <div
                     key={`${item.type}-${item.label}`}
-                    className={`bg-${color}-50 border border-${color}-200 rounded-md p-3 cursor-grab hover:bg-${color}-100 transition-colors`}
+                    className={`${classes.bg} border ${classes.border} rounded-md p-3 cursor-grab ${classes.hover} transition-colors`}
                     draggable
-                    onDragStart={(event) => onDragStart(event, item.type, item.label)}
+                    onDragStart={(event) => handleDragStart(event, item.type, item.label)}
                   >
                     <div className="flex items-start">
                       <div className="text-lg mr-2">{item.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-medium text-${color}-800`}>
+                        <div className={`text-sm font-medium ${classes.text}`}>
                           {item.label}
                         </div>
-                        <div className={`text-xs text-${color}-600 mt-1`}>
+                        <div className={`text-xs ${classes.description} mt-1`}>
                           {item.description}
                         </div>
                       </div>
